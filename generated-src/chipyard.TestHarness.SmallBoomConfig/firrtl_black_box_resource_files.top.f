@@ -1,0 +1,1 @@
+/home/centos/firesim/target-design/chipyard/sims/verilator_org/generated-src/chipyard.TestHarness.SmallBoomConfig/plusarg_reader.v

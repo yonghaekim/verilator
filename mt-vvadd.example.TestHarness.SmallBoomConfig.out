@@ -1,0 +1,4 @@
+using random seed 1589851949
+This emulator compiled with JTAG Remote Bitbang client. To enable, use +jtag_rbb_enable=1.
+Listening on port 37256
+*** PASSED *** Completed after 105709 cycles

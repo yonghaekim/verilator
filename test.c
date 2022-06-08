@@ -1,96 +1,62 @@
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
-#include "dataset.h"
-#include "util.h"
+#ifdef __ASSEMBLY__
+#define __ASM_STR(x)x
+#else
+#define __ASM_STR(x)#x
+#endif
 
-void __attribute__((noinline)) myprint(int coreid, int ncores)
-{
-  int a = 10;
-  int b = 20;
+//#ifndef __ASSEMBLY__
+#define csr_write(csr, val)         \
+({                \
+  unsigned long __v = (unsigned long)(val);   \
+  __asm__ ("csrw " __ASM_STR(csr) ", %0" \
+            : : "rK" (__v)      \
+            : "memory");      \
+})
+//  __asm__ ____volatile____ ("csrw " __ASM_STR(csr) ", %0" \
 
-  printf("a + b = %d\n", a + b);
+#define csr_read(csr)           \
+({                \
+  register unsigned long __v;       \
+  __asm__ ("csrr %0, " __ASM_STR(csr)  \
+            : "=r" (__v) :      \
+            : "memory");      \
+  __v;              \
+  })
+//  __asm__ ____volatile____ ("csrr %0, " __ASM_STR(csr)  \
+//#endif /* __ASSEMBLY__ */
 
-  __asm__ (
-            "xor x1, x1, x1;"
-            "addi x1, x1, 0x3F;"
-            "csrw 0x7c2, x1;"
-            "xor x1, x1, x1;"
-            "csrr x1, 0x7d0;"
-            "xor x1, x1, x1;"
-            "csrr x1, 0x7d1;"
-            "xor x1, x1, x1;"
-            "csrr x1, 0x7f0;"
 
-            //"xor x1, x1, x1;"
-            //"addi x1, x1, 0x7;"
-            //"csrw 0x7c4, x1;"
-          );
-  barrier(ncores);
-  __asm__ (
-            "xor x1, x1, x1;"
-            "csrw 0x7c4, x1;"
-            "xor x1, x1, x1;"
-            "csrr x1, 0x7d0;"
-            "xor x1, x1, x1;"
-            "csrr x1, 0x7d1;"
-            "xor x1, x1, x1;"
-            "csrr x1, 0x7f0;"
-          );
-}
+long int HBT[1000];
 
-void thread_entry(int cid, int nc)
-{
-  __asm__ (
-            //"xor x1, x1, x1;"
-            //"addi x1, x1, 0x100;"
-            //"mul x1, x1, x1;"
-            //"csrw 0x7c5, x1;"
-            "xor x1, x1, x1;"
-            "not x1, x1;"
-            //"xor x2, x2, x2;"
-            ///"addi x1, x1, 0x100;"
-            //"addi x2, x2, 0x2;"
-            "csrw 0x7c6, x1;"
-            "csrw 0x7c5, x1;"
-            //"mul x1, x1, x1;"
-            //"mul x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"add x1, x1, x1;"
-            //"csrw 0x7c6, x1;"
+int main(void) {
+  csr_write(0x430, 0x1);
+  csr_write(0x431, HBT);
 
-            "xor x1, x1, x1;"
-            "addi x1, x1, 0x0;"
-            "csrw 0x7c4, x1;"
-          );
+  int i;
+  char arr[12];
+  char *ptr = arr;
+  printf("Before ptr: %p\n", ptr);
 
-  barrier(nc);
-  stats(myprint(cid, nc); barrier(nc), DATA_SIZE);
+  ptr = (char *) ((long long) ptr | (long long) 0x000F000000000000);
 
-  barrier(nc);
-  exit(0);
+  printf("After ptr: %p\n", ptr);
+
+  for (i=0; i<11; i++) {
+    ptr[i] = 0;
+  }
+
+  for (i=0; i<10; i++) {
+    ptr[i] = 'a';
+  }
+
+  printf("ptr[0]: %c\n", ptr[0]);
+  
+  return 0;
 }
